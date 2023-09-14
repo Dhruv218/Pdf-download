@@ -1,56 +1,62 @@
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Button, View,Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet,Button, Text, View, TouchableOpacity } from "react-native";
 import * as FileSystem from "expo-file-system";
-import { shareAsync } from "expo-sharing";
+import * as Sharing from "expo-sharing";
 
 export default function App() {
-  const downloadFromUrl = async () => {
-    const filename = "small.mp4";
-    const result = await FileSystem.downloadAsync(
-      "http://techslides.com/demos/sample-videos/small.mp4",
-      FileSystem.documentDirectory + filename
-    );
-    console.log(result);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const [document, setDocument] = useState(null);
 
-    save(result.uri, filename, result.headers["Content-Type"]);
-  };
-
-  const save = async (uri, filename, mimetype) => {
-    if (Platform.OS === "android") {
-      const permissions =
-        await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-      if (permissions.granted) {
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        await FileSystem.StorageAccessFramework.createFileAsync(
-          permissions.directoryUri,
-          filename,
-          mimetype
-        )
-          .then(async (uri) => {
-            await FileSystem.writeAsStringAsync(uri, base64, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-          })
-          .catch((e) => console.log(e));
-      } else {
-        shareAsync(uri);
-      }
-    } else {
-      shareAsync(uri);
+  async function openShareDialogAsync() {
+    if (!(await Sharing.isAvailableAsync())) {
+      alert(`Uh oh, sharing isn't available on your platform`);
+      return;
     }
-  };
+
+    Sharing.shareAsync(document);
+  }
+
+  async function handleDownload() {
+    const callback = (downloadProgress) => {
+      const progress =
+        downloadProgress.totalBytesWritten /
+        downloadProgress.totalBytesExpectedToWrite;
+      setDownloadProgress(progress * 100);
+    };
+
+    const downloadResumable = FileSystem.createDownloadResumable(
+      "https://www.adobe.com/support/products/enterprise/knowledgecenter/media/c4611_sample_explain.pdf",
+      FileSystem.documentDirectory + "boleto.pdf",
+      {},
+      callback
+    );
+
+    try {
+      const { uri } = await downloadResumable.downloadAsync();
+      console.log("Finished downloading to ", uri);
+      setDocument(uri);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  useEffect(() => {
+    console.log(downloadProgress);
+  }, [downloadProgress]);
+
+  useEffect(() => {
+    handleDownload();
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <Image style={styles.image}
-        source={require('./assets/pdf.png')}
-      />
-      <Button title="Download File" onPress={downloadFromUrl} />
-
-      <StatusBar style="auto" />
-    </View>
+    <TouchableOpacity style={styles.container}>
+        <Button
+          onPress={() => {
+            openShareDialogAsync();
+          }}
+          title='Download file'
+       />
+      </TouchableOpacity>
   );
 }
 
@@ -61,9 +67,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  image:{
-    height:100,
-    width:100,
-    margin:15
-  }
 });
