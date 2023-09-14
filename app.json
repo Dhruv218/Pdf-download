@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "pdf_download",
-    "slug": "pdf_download",
+    "slug": "pdf-upload",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,10 +21,17 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.dhruv_aggarwal_218.pdf_download"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2939fbf0-5fd2-457a-8875-5144fc2c27e7"
+      }
+    },
+    "owner": "adhruv218"
   }
 }
